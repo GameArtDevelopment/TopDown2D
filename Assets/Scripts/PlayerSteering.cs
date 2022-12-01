@@ -9,7 +9,10 @@ public class PlayerSteering : MonoBehaviour
     public float SteeringSpeed = .01f;
 
     private Vector2 moveInput;
-    
+    private Vector2 smoothMoveInput;
+    private Vector2 velocityMoveInput;
+
+
     //private PlayerInputs pI;
     private Rigidbody2D rB;
 
@@ -20,18 +23,29 @@ public class PlayerSteering : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        //rB.MovePosition(rB.position + moveInput * AccelerationSpeed * Time.fixedDeltaTime);
-        transform.Translate(0, moveInput.y, 0);
-        transform.Rotate(0, 0, -moveInput.x);
+        DrivingSpeed();
+        Steering();
     }
+
+    private void DrivingSpeed()
+    {
+        smoothMoveInput = Vector2.SmoothDamp(smoothMoveInput, moveInput, ref velocityMoveInput, .1f);
+        rB.velocity = smoothMoveInput * AccelerationSpeed;
+    }
+
     private void OnMove(InputValue value)
     {
-        //transform.Translate(0, AccelerationSpeed, 0);
+        
         moveInput = value.Get<Vector2>();
     }
-    private void OnSteer(InputValue value)
+    private void Steering()
     {
-        //transform.Rotate(0, 0, SteeringSpeed);
-        moveInput = value.Get<Vector2>();
+        if (moveInput != Vector2.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(transform.forward, smoothMoveInput);
+            Quaternion rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, SteeringSpeed * Time.deltaTime);
+
+            rB.MoveRotation(rotation);
+        }
     }
 }
